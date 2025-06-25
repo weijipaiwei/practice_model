@@ -1,0 +1,45 @@
+output_dir: "train_flowllm_f8d16/result/1" # TODO
+gradient_accumulation_steps: 2 # TODO
+mixed_precision: bf16 # TODO
+train_batch_size: 16 # TODO 总的batch size
+use_ema: false # TODO
+no_weight_decay_params: # TODO
+  - bn
+  - bias
+  - embedding
+learning_rate: 1.0e-4 # TODO
+lr_warmup_rate: 0.001 # TODO
+max_train_steps: 2000 # TODO
+resume_from_checkpoint: false # TODO false or latest
+checkpointing_steps: 500 # TODO
+validation_steps: 500 # TODO -1 表示不进行validation
+
+
+train_dataset:
+  _target_: train_flowllm_f8d16.dataset_loader.imagenet1k.Imagenet1k
+  root_dir: /slurm/home/yrd/kanlab/zhangchenfeng/dataset/imagenet1k/small_imagenet1k_split # TODO
+  vision_encoder_image_size: 896
+  vae_image_size: 256
+  category_map_file: datasets/imagenet1k_meta.json # TODO
+
+
+model: # TODO
+  _target_: train_flowllm_f8d16.models.flowllm.Flowllm
+  config:
+    _target_: train_flowllm_f8d16.models.flowllm.Flowllm_config
+    gemma3_config_path: "/slurm/home/yrd/kanlab/zhangchenfeng/program/diff_gen/gemma3_4b_pt_language_model/gemma3_config.json" # TODO
+    gemma3_language_model_path: "/slurm/home/yrd/kanlab/zhangchenfeng/program/diff_gen/gemma3_4b_pt_language_model" # TODO
+    flow_vae_path: /slurm/home/yrd/kanlab/zhangchenfeng/program/diff_gen/train_flowvae_f8d16/result/2/final_checkpoint_2500_steps # TODO
+    multi_modal_projector_path: "/slurm/home/yrd/kanlab/zhangchenfeng/program/diff_gen/gemma3_4b_pt_language_model/multi_modal_projector.pth" # TODO
+    mode: "generation" # "generation" or "understanding"
+    fm_condition_dim: 64
+    fm_condition_level_size:
+      - 1
+      - 2
+      - 4
+      - 8
+      - 16
+    text_loss_weight: 0.0
+    forward_kl_loss_weight: 1e-7
+    backward_kl_loss_weight: 1e-6
+    latent_mse_loss_weight: 1.0

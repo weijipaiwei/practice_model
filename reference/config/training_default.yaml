@@ -1,0 +1,94 @@
+
+
+output_dir: "training_template/result" # TODO
+gradient_accumulation_steps: 1 # TODO
+mixed_precision: bf16 # TODO
+train_batch_size: 64 # TODO 总的batch size
+val_batch_size: 64 # TODO
+use_ema: true # TODO
+no_weight_decay_params: # TODO
+  - bn
+  - bias
+  - embedding
+learning_rate: 1.0e-5 # TODO
+lr_warmup_rate: 0.025 # TODO
+max_train_steps: 80000 # TODO
+resume_from_checkpoint: false # TODO false or latest
+checkpointing_steps: 2000 # TODO
+validation_steps: 2000 # TODO -1 表示不进行validation
+special_config_path:
+  - train_flowllm_f8d16/config/sepcific_training_config.yaml # TODO多级yaml调用，避免重复配置, 需要手动指定
+
+
+tracker_project_name: "training" # 用于tensorboard的project name，相当于把tensorboard的结果放在 ${logging_dir}/${tracker_project_name} 中
+logging_dir: ${output_dir}/logging
+allow_tf32: false
+seed: 42
+dataloader_num_workers: 8
+adam_weight_decay: 0.01
+max_grad_norm: 1.0
+checkpoints_total_limit: 5
+num_train_epochs: ???
+
+
+train_dataset:
+  _target_: train_flowllm_f8d16.dataset_loader.imagenet1k.Imagenet1k
+  root_dir: ??? # TODO
+  vision_encoder_image_size: 896
+  vae_image_size: 256
+  category_map_file: datasets/imagenet1k_meta.json # TODO
+
+model: # TODO
+  _target_: train_flowllm_f8d16.models.flowllm.Flowllm
+  config:
+    _target_: train_flowllm_f8d16.models.flowllm.Flowllm_config
+    gemma3_config_path: "/home/zcf/weights/gemma3_4b_pt_language_model/gemma3_config.json" # TODO
+    gemma3_language_model_path: "/home/zcf/weights/gemma3_4b_pt_language_model" # TODO
+    flow_vae_path: ??? # TODO
+    multi_modal_projector_path: "/home/zcf/weights/gemma3_4b_pt_language_model/multi_modal_projector.pth" # TODO
+    mode: "generation" # "generation" or "understanding"
+    fm_condition_dim: 64
+    fm_condition_level_size:
+      - 1
+      - 2
+      - 4
+      - 8
+      - 16
+    text_loss_weight: 0.0
+    forward_kl_loss_weight: 0.1
+    backward_kl_loss_weight: 1.0
+    latent_mse_loss_weight: 1.0
+
+
+ema_model:
+  _target_: train_flowllm_f8d16.models.EMA.EMAModel # TODO
+  decay: 0.9999
+  min_decay: 0.9999
+  use_ema_warmup: true
+  inv_gamma: 1.0
+  power: 0.75
+
+accelerate:
+  _target_: accelerate.Accelerator
+  gradient_accumulation_steps: ${gradient_accumulation_steps}
+  mixed_precision: ${mixed_precision}
+  log_with: tensorboard
+  project_config:
+    _target_: accelerate.utils.ProjectConfiguration
+    project_dir: ${output_dir}
+    logging_dir: ${logging_dir}
+
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: ${learning_rate}
+  betas:
+    - 0.9
+    - 0.999
+  eps: 1e-8
+
+lr_scheduler:
+  _target_: diffusers.optimization.get_scheduler
+  name: "cosine_with_restarts"
+  num_cycles: 1
+  power: 1.0
+  last_epoch: -1

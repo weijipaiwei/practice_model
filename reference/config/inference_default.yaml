@@ -1,0 +1,22 @@
+
+output_dir: "/slurm/home/yrd/kanlab/zhangchenfeng/program/diff_gen/train_flowllm_f8d16/result/1" # TODO
+mixed_precision: bf16 # TODO
+model_name: flowllm # TODO
+inference_batch_size: 2 # TODO
+use_ema: false # TODO
+
+allow_tf32: false
+seed: 42
+dataloader_num_workers: 1
+
+inference_dataset: # TODO
+  _target_: train_flowllm_f8d16.dataset_loader.imagenet1k.Imagenet1k
+  root_dir: /slurm/home/yrd/kanlab/zhangchenfeng/dataset/imagenet1k/small_imagenet1k_split # TODO
+  vision_encoder_image_size: 896
+  vae_image_size: 256
+  category_map_file: datasets/imagenet1k_meta.json # TODO
+
+
+accelerate:
+  _target_: accelerate.Accelerator
+  mixed_precision: bf16
