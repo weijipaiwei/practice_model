@@ -120,11 +120,11 @@ def generation_v4_topk_topp_repeatPenalty_ngrams_kvCache_mllm_instruct(
         outputs = model(
             input_ids = input_ids,
             attention_mask = attention_mask,
-            past_key_values=past_key_values,
-            pixel_values=pixel_values,
             image_grid_thw=image_grid_thw,
-            cache_position=cache_position,
             use_cache=True,
+            past_key_values=past_key_values,
+            cache_position=cache_position,
+            pixel_values=pixel_values,
             return_dict = True
         )
     logits = outputs.logits

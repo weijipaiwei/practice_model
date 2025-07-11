@@ -188,8 +188,7 @@ class MyModelConfig(PretrainedConfig):
         self.attn_implementation = attn_implementation
 
 
-
-class MyModel(PreTrainedModel, GenerationMixin):
+class MyModel(PreTrainedModel):
     config_class = MyModelConfig
     
     def __init__(self, config: MyModelConfig):
@@ -206,38 +205,32 @@ class MyModel(PreTrainedModel, GenerationMixin):
         )
         
     def forward(self,
-                input_ids,
-                attention_mask=None,
-                pixel_values=None,
-                image_grid_thw=None,
-                return_dict=True,
-                labels=None,
-                **kwargs):
-        """
-        前向传播函数
-        
-        Args:
-            input_ids: 输入ids
-            attention_mask: 注意力掩码
-            pixel_values: 图像输入
-            image_grid_thw: 图像网格
-            return_dict: 是否返回字典
-            labels: 标签（用于训练）
-        """
+            input_ids,
+            attention_mask,
+            image_grid_thw,
+            use_cache,
+            past_key_values,
+            cache_position,
+            pixel_values,
+            labels
+        ):
+
         # 使用基础模型进行前向传播
         outputs = self.model(
             input_ids=input_ids,
             attention_mask=attention_mask,
-            pixel_values=pixel_values,
             image_grid_thw=image_grid_thw,
-            return_dict=return_dict,
-            **kwargs
+            use_cache=use_cache,
+            past_key_values=past_key_values,
+            cache_position=cache_position,
+            pixel_values=pixel_values,
+            labels=None,
+            return_dict=True
         )
 
         loss = None
+        logits = outputs.logits.float()
         if labels is not None:
-            logits = outputs.logits
-            logits = logits.float()
             shift_logits = logits[..., :-1, :].contiguous()
             shift_labels = labels[..., 1:].contiguous()
             loss_fct = CrossEntropyLoss()
@@ -248,49 +241,6 @@ class MyModel(PreTrainedModel, GenerationMixin):
         # 返回结果字典，包含损失和其他信息
         return MyModelOutput(
             loss=loss,
-            logits=outputs.logits,
+            logits=logits,
         )
     
-    def prepare_inputs_for_generation(self, input_ids, attention_mask=None, pixel_values=None, image_grid_thw=None, **kwargs):
-        """
-        为生成准备输入
-        """
-        return {
-            "input_ids": input_ids,
-            "attention_mask": attention_mask,
-            "pixel_values": pixel_values,
-            "image_grid_thw": image_grid_thw,
-            **kwargs
-        }
-    
-    def get_output_embeddings(self):
-        """
-        获取输出嵌入层
-        """
-        return self.model.get_output_embeddings()
-    
-    def set_output_embeddings(self, new_embeddings):
-        """
-        设置输出嵌入层
-        """
-        return self.model.set_output_embeddings(new_embeddings)
-    
-    def get_encoder(self):
-        """
-        获取编码器
-        """
-        return self.model.get_encoder()
-    
-    def get_decoder(self):
-        """
-        获取解码器
-        """
-        return self.model.get_decoder()
-    
-    def _reorder_cache(self, past, beam_idx):
-        """
-        重新排序缓存
-        """
-        return self.model._reorder_cache(past, beam_idx)
-
-

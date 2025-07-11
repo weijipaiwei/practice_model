@@ -14,5 +14,7 @@
 3. 理想训练步数
 100,000步 - 这是获得最佳EMA效果的步数
 
-general_utils文件夹中有llm_generator和mllm_generator，是自己实现的llm解码函数。更加灵活可控
+general_utils文件夹中有llm_generator和mllm_generator，是自己实现的llm解码函数。更加灵活可控。
+但是注意llm_generator和mllm_generator需要进行修改才能放到自己的inference过程中去。
+不要直接从general_utils中import函数
 

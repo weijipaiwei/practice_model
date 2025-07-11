@@ -282,9 +282,11 @@ def main(args):
                 result_dict = model(
                     input_ids=input_ids,
                     attention_mask=attention_mask,
-                    pixel_values=pixel_values,
                     image_grid_thw=image_grid_thw,
-                    return_dict=True,
+                    use_cache=False,
+                    past_key_values=None,
+                    cache_position=None,
+                    pixel_values=pixel_values,
                     labels=labels,
                 )
 
@@ -371,9 +373,11 @@ def main(args):
                             result_dict = unwrapped_model(
                                 input_ids=input_ids,
                                 attention_mask=attention_mask,
-                                pixel_values=pixel_values,
                                 image_grid_thw=image_grid_thw,
-                                return_dict=True,
+                                use_cache=False,
+                                past_key_values=None,
+                                cache_position=None,
+                                pixel_values=pixel_values,
                                 labels=labels,
                             )
 

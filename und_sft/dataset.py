@@ -274,6 +274,7 @@ class MyDataset_eval(Dataset):
 
         self.annotation_path = annotation_path
         self.processor = self.load_processor(processor_path)
+        self.eos_token_ids = [self.processor.tokenizer.eos_token_id, self.processor.tokenizer.pad_token_id]
         self.image_root = os.path.join(os.path.dirname(annotation_path), "JPEGImages")
 
         with open(self.annotation_path, 'r', encoding='utf-8') as f:
