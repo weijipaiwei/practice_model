@@ -1,0 +1,82 @@
+seed: 42
+train_batch_size: 4
+val_batch_size: 4
+learning_rate: 1e-4
+gradient_accumulation_steps: 2
+max_train_steps: 2000
+num_train_epochs: null
+tracker_project_name: "und_sft"
+output_dir: "./und_sft/outputs/result2"
+dataloader_num_workers: 2
+no_weight_decay_params: # TODO
+  - bn
+  - bias
+  - embedding
+
+
+mixed_precision: "bf16"
+allow_tf32: false
+use_ema: true
+adam_weight_decay: 0.01
+max_grad_norm: 1.0
+checkpoints_total_limit: 5
+lr_warmup_rate: 0.1
+checkpointing_steps: 400
+validation_steps: 400
+resume_from_checkpoint: null
+
+# EMA模型配置
+ema_model:
+  _target_: model.EMAModel
+  decay: 0.9999
+  min_decay: 0.999
+  use_ema_warmup: true
+  inv_gamma: 1.0
+  power: 0.75
+
+# Accelerate配置
+accelerate:
+  _target_: accelerate.Accelerator
+  mixed_precision: ${mixed_precision}
+  gradient_accumulation_steps: ${gradient_accumulation_steps}
+  log_with: tensorboard
+  project_config:
+    _target_: accelerate.utils.ProjectConfiguration
+    project_dir: ${output_dir}
+    logging_dir: ${output_dir}/logs
+
+
+train_dataset:
+  _target_: dataset.MyDataset
+  annotation_path: /slurm/home/yrd/kanlab/zhangchenfeng/program/practice_model/und_sft/detection_dataset/train.jsonl
+  processor_path: "Qwen/Qwen2.5-VL-3B-Instruct"
+
+val_dataset:
+  _target_: dataset.MyDataset
+  annotation_path: /slurm/home/yrd/kanlab/zhangchenfeng/program/practice_model/und_sft/detection_dataset/test.jsonl
+  processor_path: "Qwen/Qwen2.5-VL-3B-Instruct"
+
+
+model:
+  _target_: model.MyModel
+  config:
+    _target_: model.MyModelConfig
+    base_model_name_or_path: "Qwen/Qwen2.5-VL-3B-Instruct"
+    torch_dtype: "bfloat16"
+    attn_implementation: "flash_attention_2" # flash_attention_2 or eager
+
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: ${learning_rate}
+  betas:
+    - 0.9
+    - 0.999
+  eps: 1e-8
+
+
+lr_scheduler:
+  _target_: diffusers.optimization.get_scheduler
+  name: "cosine_with_restarts"
+  num_cycles: 1
+  power: 1.0
+  last_epoch: -1

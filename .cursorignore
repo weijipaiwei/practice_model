@@ -1,9 +1,9 @@
-__pycache__/
-result/
+reference*
 tmp*
+.gitignore
+.cursorignore
 und_sft/dataset
 und_sft/detection_dataset
 und_sft/customed_weight
-und_sft/outputs
 diffusers-main
 .vscode
