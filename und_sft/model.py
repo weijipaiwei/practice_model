@@ -6,6 +6,7 @@ from transformers import Qwen2VLModel, PretrainedConfig, PreTrainedModel, Qwen2_
 from typing import Any, Dict, Iterable, Optional, Union
 from torch.nn import CrossEntropyLoss
 from transformers.utils import ModelOutput
+from transformers.cache_utils import DynamicCache
 
 class EMAModel:
     """
@@ -172,6 +173,7 @@ class EMAModel:
 class MyModelOutput(ModelOutput):
     loss: Optional[torch.FloatTensor] = None
     logits: torch.FloatTensor = None
+    past_key_values: DynamicCache = None
 
 
 # TODO 最后根据参数修改
@@ -242,5 +244,6 @@ class MyModel(PreTrainedModel):
         return MyModelOutput(
             loss=loss,
             logits=logits,
+            past_key_values=outputs.past_key_values,
         )
     

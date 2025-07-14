@@ -10,6 +10,7 @@ from dataset import MyDataset_eval
 from torch.utils.data import DataLoader
 from transformers.cache_utils import DynamicCache
 from qwen_vl_utils import process_vision_info
+from tqdm import tqdm
 
 
 from evaluation.evaluation import calculate_metrics_at_confidence_threshold
@@ -184,7 +185,7 @@ def inference_main():
     model_path = "/slurm/home/yrd/kanlab/zhangchenfeng/program/practice_model/und_sft/outputs/result2/final_checkpoint_2000_steps"
     annotation_path = "/slurm/home/yrd/kanlab/zhangchenfeng/program/practice_model/und_sft/detection_dataset/test.jsonl"
     processor_path = "Qwen/Qwen2.5-VL-3B-Instruct"
-    eval_batch_size = 32
+    eval_batch_size = 1
     num_workers = 2
     seed = 42
     
@@ -201,33 +202,33 @@ def inference_main():
     results = []
 
     with torch.no_grad():
-        for batch in val_dataloader:
+        for batch in tqdm(val_dataloader, desc="Inference"):
             input_ids = batch["input_ids"]
             attention_mask = batch["attention_mask"]
             pixel_values = batch["pixel_values"]
             image_grid_thw = batch["image_grid_thw"]
+            # breakpoint()
 
             generated_ids_trimmed = []
             output_text = []
 
-            for index, (ii, am, pv, igt) in enumerate(zip(input_ids, attention_mask, pixel_values, image_grid_thw)):
-                generated_ids = generation_v4_topk_topp_repeatPenalty_ngrams_kvCache_mllm_instruct(
-                    model = model,
-                    input_ids = ii,
-                    attention_mask = am,
-                    pixel_values = pv,
-                    image_grid_thw = igt,
-                    max_new_tokens = 1024,
-                    temperature = 1e-6,
-                    topk = 50,
-                    topp = 1.0,
-                    repeat_penalty = 1.05,
-                    repeat_penalty_length = 1,  
-                    eos_token_ids = eos_token_ids,
-                    no_repeat_ngram_size = 0,
-                )
-                generated_ids_trimmed.append(generated_ids)
-                output_text.append(val_dataset.processor.tokenizer.decode(generated_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False))
+            generated_ids = generation_v4_topk_topp_repeatPenalty_ngrams_kvCache_mllm_instruct(
+                model = model,
+                input_ids = input_ids,
+                attention_mask = attention_mask,
+                pixel_values = pixel_values,
+                image_grid_thw = image_grid_thw,
+                max_new_tokens = 1024,
+                temperature = 1e-6,
+                topk = 50,
+                topp = 1.0,
+                repeat_penalty = 1.05,
+                repeat_penalty_length = 1,  
+                eos_token_ids = eos_token_ids,
+                no_repeat_ngram_size = 0,
+            )
+            generated_ids_trimmed.append(generated_ids)
+            output_text.append(val_dataset.processor.tokenizer.decode(generated_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False))
 
             ###############################################################################################
             '''
@@ -243,13 +244,14 @@ def inference_main():
                 bbox_start = None
                 bbox_end = None
                 bboxes = []
-                for generated_id in answer_list:
+                for idx, generated_id in enumerate(answer_list):
                     if generated_id == bbox_start_idx:
-                        bbox_start = generated_id
+                        bbox_start = idx
                     if generated_id == bbox_end_idx:
-                        bbox_end = generated_id
+                        bbox_end = idx
                         bboxes.append((bbox_start, bbox_end))
 
+                # breakpoint()
                 if not check_bbox(bboxes):
                     print(f"bbox is not valid, llm answer: {output_text[index]}, skip this sample.")
                     continue
